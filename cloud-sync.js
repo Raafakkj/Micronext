@@ -26,6 +26,7 @@
   let isApplyingRemote = false;
   let syncTimer = null;
   let lastLocalWriteAt = 0;
+  const dirtyCategories = new Set();
 
   function safeParse(raw, fallback) {
     if (raw == null) return fallback;
@@ -134,15 +135,22 @@
 
   function syncStateNow() {
     if (isApplyingRemote) return;
+    if (!dirtyCategories.size) return;
 
     const snapshot = readLocalState();
+    const patch = {};
+    dirtyCategories.forEach((category) => {
+      patch[category] = snapshot[category];
+    });
+    dirtyCategories.clear();
 
     fetch("/api/data", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(snapshot),
+      body: JSON.stringify(patch),
       keepalive: true
     }).catch(() => {
+      Object.keys(patch).forEach((category) => dirtyCategories.add(category));
       // Retry naturally in next user interaction.
     });
   }
@@ -193,20 +201,37 @@
 
     localStorage.setItem = function patchedSetItem(key, value) {
       originalSetItem(key, value);
-      if (Object.values(STORAGE_KEYS).includes(key) || key.startsWith(UNREAD_PREFIX)) {
+      const category = Object.entries(STORAGE_KEYS).find(([, storageKey]) => storageKey === key)?.[0];
+      if (category) {
+        dirtyCategories.add(category);
+        scheduleSync();
+        return;
+      }
+
+      if (key.startsWith(UNREAD_PREFIX)) {
+        dirtyCategories.add("unreadByRm");
         scheduleSync();
       }
     };
 
     localStorage.removeItem = function patchedRemoveItem(key) {
       originalRemoveItem(key);
-      if (Object.values(STORAGE_KEYS).includes(key) || key.startsWith(UNREAD_PREFIX)) {
+      const category = Object.entries(STORAGE_KEYS).find(([, storageKey]) => storageKey === key)?.[0];
+      if (category) {
+        dirtyCategories.add(category);
+        scheduleSync();
+        return;
+      }
+
+      if (key.startsWith(UNREAD_PREFIX)) {
+        dirtyCategories.add("unreadByRm");
         scheduleSync();
       }
     };
 
     localStorage.clear = function patchedClear() {
       originalClear();
+      Object.keys(DEFAULT_STATE).forEach((category) => dirtyCategories.add(category));
       scheduleSync();
     };
   }
@@ -218,6 +243,7 @@
     if (remoteState && hasMeaningfulData(remoteState)) {
       applyRemoteState(remoteState);
     } else if (hasMeaningfulData(localState)) {
+      Object.keys(DEFAULT_STATE).forEach((category) => dirtyCategories.add(category));
       syncStateNow();
     }
 
