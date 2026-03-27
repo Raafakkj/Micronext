@@ -18,11 +18,19 @@ const settingsMessage = document.getElementById("settings-message");
 const avatarPreview = document.getElementById("avatar-preview");
 const avatarUpload = document.getElementById("avatar-upload");
 const clearAvatarBtn = document.getElementById("clear-avatar");
+const fullNameInput = document.getElementById("full-name");
+const usernameInput = document.getElementById("username");
+const roleSelect = document.getElementById("role");
 
 const loginForm = document.getElementById("login-form");
 const loginMessage = document.getElementById("login-message");
+const newRmInput = document.getElementById("new-rm");
+const loginPasswordInput = document.getElementById("login-password");
 const passwordForm = document.getElementById("password-form");
 const passwordMessage = document.getElementById("password-message");
+const currentPasswordInput = document.getElementById("current-password");
+const newPasswordInput = document.getElementById("new-password");
+const confirmPasswordInput = document.getElementById("confirm-password");
 
 const ALLOWED_ROLES = ["Developer", "Scrum Master", "PO"];
 
@@ -118,7 +126,24 @@ let profile = isPlainObject(profiles[currentRm]) ? profiles[currentRm] : {
 let pendingAvatarData = null;
 let lastProfileFingerprint = JSON.stringify(profile || {});
 
-if (!settingsForm || !loginForm || !passwordForm || !avatarPreview || !avatarUpload || !clearAvatarBtn || !userInfo || !logoutBtn) {
+if (
+  !settingsForm ||
+  !loginForm ||
+  !passwordForm ||
+  !avatarPreview ||
+  !avatarUpload ||
+  !clearAvatarBtn ||
+  !userInfo ||
+  !logoutBtn ||
+  !fullNameInput ||
+  !usernameInput ||
+  !roleSelect ||
+  !newRmInput ||
+  !loginPasswordInput ||
+  !currentPasswordInput ||
+  !newPasswordInput ||
+  !confirmPasswordInput
+) {
   console.warn("Settings UI incompleta, ignorando inicializacao desta pagina.");
 }
 
@@ -154,9 +179,9 @@ function syncProfileFromStorage() {
   profile = latestProfile;
   lastProfileFingerprint = fingerprint;
 
-  settingsForm.fullName.value = profile.fullName || "";
-  settingsForm.username.value = profile.username || "";
-  settingsForm.role.value = profile.role || "Developer";
+  fullNameInput.value = profile.fullName || "";
+  usernameInput.value = profile.username || "";
+  roleSelect.value = profile.role || "Developer";
   refreshHeader();
   renderAvatar();
 }
@@ -166,11 +191,28 @@ function setMessage(el, text, ok = false) {
   el.textContent = text;
 }
 
-if (settingsForm && loginForm && passwordForm && avatarPreview && avatarUpload && clearAvatarBtn && userInfo && logoutBtn) {
-  settingsForm.fullName.value = profile.fullName || "";
-  settingsForm.username.value = profile.username || "";
-  settingsForm.role.value = profile.role || "Developer";
-  loginForm.newRm.value = currentRm;
+if (
+  settingsForm &&
+  loginForm &&
+  passwordForm &&
+  avatarPreview &&
+  avatarUpload &&
+  clearAvatarBtn &&
+  userInfo &&
+  logoutBtn &&
+  fullNameInput &&
+  usernameInput &&
+  roleSelect &&
+  newRmInput &&
+  loginPasswordInput &&
+  currentPasswordInput &&
+  newPasswordInput &&
+  confirmPasswordInput
+) {
+  fullNameInput.value = profile.fullName || "";
+  usernameInput.value = profile.username || "";
+  roleSelect.value = profile.role || "Developer";
+  newRmInput.value = currentRm;
 
   refreshHeader();
   renderAvatar();
@@ -178,9 +220,9 @@ if (settingsForm && loginForm && passwordForm && avatarPreview && avatarUpload &
   settingsForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
-  const fullName = settingsForm.fullName.value.trim();
-  const username = settingsForm.username.value.trim();
-  const role = ALLOWED_ROLES.includes(settingsForm.role.value) ? settingsForm.role.value : "Developer";
+  const fullName = fullNameInput.value.trim();
+  const username = usernameInput.value.trim();
+  const role = ALLOWED_ROLES.includes(roleSelect.value) ? roleSelect.value : "Developer";
 
   if (fullName.length < 3 || username.length < 3) {
     setMessage(settingsMessage, "Preencha nome real e nome de usuario com ao menos 3 caracteres.");
@@ -240,8 +282,8 @@ if (settingsForm && loginForm && passwordForm && avatarPreview && avatarUpload &
   loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
-  const newRm = sanitizeRm(loginForm.newRm.value.trim());
-  const currentPassword = loginForm.currentPassword.value;
+  const newRm = sanitizeRm(newRmInput.value.trim());
+  const currentPassword = loginPasswordInput.value;
 
   if (newRm.length < 5 || newRm.length > 7) {
     setMessage(loginMessage, "Informe um RM valido (5 a 7 digitos).");
@@ -283,10 +325,10 @@ if (settingsForm && loginForm && passwordForm && avatarPreview && avatarUpload &
     profile = profiles[currentRm];
     lastProfileFingerprint = JSON.stringify(profile || {});
     setSession(currentRm);
-    loginForm.newRm.value = currentRm;
-    settingsForm.fullName.value = profile.fullName || "";
-    settingsForm.username.value = profile.username || "";
-    settingsForm.role.value = profile.role || "Developer";
+    newRmInput.value = currentRm;
+    fullNameInput.value = profile.fullName || "";
+    usernameInput.value = profile.username || "";
+    roleSelect.value = profile.role || "Developer";
     refreshHeader();
   }
 
@@ -295,16 +337,16 @@ if (settingsForm && loginForm && passwordForm && avatarPreview && avatarUpload &
     persistUsersRemote();
   }
 
-  loginForm.currentPassword.value = "";
+  loginPasswordInput.value = "";
   setMessage(loginMessage, "Login atualizado com sucesso.", true);
   });
 
   passwordForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
-  const currentPassword = passwordForm.currentPassword.value;
-  const newPassword = passwordForm.newPassword.value;
-  const confirmPassword = passwordForm.confirmPassword.value;
+  const currentPassword = currentPasswordInput.value;
+  const newPassword = newPasswordInput.value;
+  const confirmPassword = confirmPasswordInput.value;
 
   if (newPassword.length < 6) {
     setMessage(passwordMessage, "A nova senha deve ter no minimo 6 caracteres.");
