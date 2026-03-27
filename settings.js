@@ -4,11 +4,12 @@ const SPRINTS_KEY = "fiap_sprints_data";
 const UNREAD_LOGS_KEY = "fiap_kanban_unread_logs";
 
 const session = getSession();
-if (!session) {
+if (!session || !sanitizeRm(session.rm) || sanitizeRm(session.rm).length < 5 || sanitizeRm(session.rm).length > 7) {
+  clearSession();
   window.location.href = "./index.html";
 }
 
-let currentRm = session.rm;
+let currentRm = sanitizeRm(session.rm);
 
 const userInfo = document.getElementById("user-info");
 const logoutBtn = document.getElementById("logout");
@@ -70,9 +71,11 @@ function initialsFromName(name) {
 
 function ensureProfileExists(profiles, rm) {
   const source = profiles[rm] || {};
+  const sourceFullName = String(source.fullName || "").trim();
+  const sourceUsername = String(source.username || "").trim();
   const next = {
-    fullName: source.fullName || `Aluno RM ${rm}`,
-    username: source.username || `aluno${rm}`,
+    fullName: sourceFullName.length >= 3 ? sourceFullName : `Aluno RM ${rm}`,
+    username: sourceUsername.length >= 3 ? sourceUsername : `aluno${rm}`,
     role: ALLOWED_ROLES.includes(source.role) ? source.role : "Developer",
     avatar: source.avatar || ""
   };
@@ -139,8 +142,10 @@ function refreshHeader() {
 function syncProfileFromStorage() {
   const latestRawProfiles = safeRead(PROFILES_KEY, {});
   const latestProfiles = isPlainObject(latestRawProfiles) ? latestRawProfiles : {};
+  if (!isPlainObject(latestProfiles[currentRm])) return;
+
+  ensureProfileExists(latestProfiles, currentRm);
   const latestProfile = latestProfiles[currentRm];
-  if (!isPlainObject(latestProfile)) return;
 
   const fingerprint = JSON.stringify(latestProfile);
   if (fingerprint === lastProfileFingerprint) return;

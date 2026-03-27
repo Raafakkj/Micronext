@@ -41,14 +41,25 @@ function getSession() {
   if (!raw) return null;
 
   try {
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+
+    const rm = sanitizeRm(parsed.rm);
+    if (rm.length < 5 || rm.length > 7) return null;
+
+    return { ...parsed, rm };
   } catch {
     return null;
   }
 }
 
 function setSession(rm) {
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ rm, loginAt: Date.now() }));
+  const sanitizedRm = sanitizeRm(rm);
+  if (sanitizedRm.length < 5 || sanitizedRm.length > 7) {
+    clearSession();
+    return;
+  }
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ rm: sanitizedRm, loginAt: Date.now() }));
 }
 
 function clearSession() {
