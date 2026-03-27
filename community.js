@@ -71,6 +71,7 @@ const currentProfile = profiles[session.rm] || {
 userInfo.textContent = `${currentProfile.username} (${currentProfile.role}) - RM ${session.rm}`;
 
 const posts = safeRead(COMMUNITY_KEY, []);
+let lastPostsFingerprint = JSON.stringify(posts);
 
 function setPostMessage(text, ok = false) {
   postMessage.style.color = ok ? "#16d47b" : "#ff6f78";
@@ -244,6 +245,16 @@ function renderFeed() {
   });
 }
 
+function refreshPostsFromStorage() {
+  const latest = safeRead(COMMUNITY_KEY, []);
+  const nextFingerprint = JSON.stringify(latest);
+  if (nextFingerprint === lastPostsFingerprint) return;
+
+  posts.splice(0, posts.length, ...latest);
+  lastPostsFingerprint = nextFingerprint;
+  renderFeed();
+}
+
 postForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
@@ -285,6 +296,7 @@ postForm.addEventListener("submit", async (event) => {
   }
 
   save(COMMUNITY_KEY, posts);
+  lastPostsFingerprint = JSON.stringify(posts);
   postForm.reset();
   setPostMessage("Publicacao enviada para a comunidade.", true);
   renderFeed();
@@ -297,5 +309,12 @@ logoutBtn.addEventListener("click", () => {
   clearSession();
   window.location.href = "./index.html";
 });
+
+window.addEventListener("cloud-sync:remote-update", refreshPostsFromStorage);
+window.addEventListener("focus", refreshPostsFromStorage);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refreshPostsFromStorage();
+});
+setInterval(refreshPostsFromStorage, 2000);
 
 renderFeed();

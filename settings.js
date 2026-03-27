@@ -1,4 +1,5 @@
 const PROFILES_KEY = "fiap_kanban_profiles";
+const USERS_KEY = "fiap_kanban_users";
 const SPRINTS_KEY = "fiap_sprints_data";
 const UNREAD_LOGS_KEY = "fiap_kanban_unread_logs";
 
@@ -35,6 +36,22 @@ function safeRead(key, fallback) {
 
 function saveProfiles(profiles) {
   localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+  persistCategoryRemote("profiles", profiles);
+}
+
+function persistCategoryRemote(category, data) {
+  fetch(`/api/data/${category}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data }),
+    keepalive: true
+  }).catch(() => {
+    // cloud-sync retries background sync
+  });
+}
+
+function persistUsersRemote() {
+  persistCategoryRemote("users", safeRead(USERS_KEY, []));
 }
 
 function initialsFromName(name) {
@@ -75,6 +92,7 @@ ensureProfileExists(profiles, currentRm);
 
 let profile = profiles[currentRm];
 let pendingAvatarData = null;
+let lastProfileFingerprint = JSON.stringify(profile || {});
 
 if (!ALLOWED_ROLES.includes(profile.role)) {
   profile.role = "Developer";
@@ -95,6 +113,25 @@ function renderAvatar() {
 
 function refreshHeader() {
   userInfo.textContent = `${profile.username} (${profile.role}) - RM ${currentRm}`;
+}
+
+function syncProfileFromStorage() {
+  const latestProfiles = safeRead(PROFILES_KEY, {});
+  const latestProfile = latestProfiles[currentRm];
+  if (!latestProfile) return;
+
+  const fingerprint = JSON.stringify(latestProfile);
+  if (fingerprint === lastProfileFingerprint) return;
+
+  profiles[currentRm] = latestProfile;
+  profile = latestProfile;
+  lastProfileFingerprint = fingerprint;
+
+  settingsForm.fullName.value = profile.fullName || "";
+  settingsForm.username.value = profile.username || "";
+  settingsForm.role.value = profile.role || "Developer";
+  refreshHeader();
+  renderAvatar();
 }
 
 function setMessage(el, text, ok = false) {
@@ -133,6 +170,7 @@ settingsForm.addEventListener("submit", (event) => {
 
   profiles[currentRm] = profile;
   saveProfiles(profiles);
+  lastProfileFingerprint = JSON.stringify(profile);
 
   setMessage(settingsMessage, "Perfil salvo com sucesso.", true);
   avatarUpload.value = "";
@@ -166,6 +204,7 @@ clearAvatarBtn.addEventListener("click", () => {
   profile.avatar = "";
   profiles[currentRm] = profile;
   saveProfiles(profiles);
+  lastProfileFingerprint = JSON.stringify(profile);
   renderAvatar();
   setMessage(settingsMessage, "Foto removida.", true);
 });
@@ -199,6 +238,7 @@ loginForm.addEventListener("submit", async (event) => {
   const oldRm = currentRm;
   currentUser.rm = newRm;
   saveRegisteredUsers(users);
+  persistUsersRemote();
 
   if (newRm !== oldRm) {
     profiles[newRm] = profiles[oldRm] || profile;
@@ -209,13 +249,18 @@ loginForm.addEventListener("submit", async (event) => {
 
     currentRm = newRm;
     profile = profiles[currentRm];
+    lastProfileFingerprint = JSON.stringify(profile || {});
     setSession(currentRm);
     loginForm.newRm.value = currentRm;
+    settingsForm.fullName.value = profile.fullName || "";
+    settingsForm.username.value = profile.username || "";
+    settingsForm.role.value = profile.role || "Developer";
     refreshHeader();
   }
 
   if (upgraded) {
     saveRegisteredUsers(users);
+    persistUsersRemote();
   }
 
   loginForm.currentPassword.value = "";
@@ -249,6 +294,7 @@ passwordForm.addEventListener("submit", async (event) => {
 
   await setUserPassword(currentUser, newPassword);
   saveRegisteredUsers(users);
+  persistUsersRemote();
 
   passwordForm.reset();
   setMessage(passwordMessage, "Senha atualizada com sucesso.", true);
@@ -257,5 +303,11 @@ passwordForm.addEventListener("submit", async (event) => {
 logoutBtn.addEventListener("click", () => {
   clearSession();
   window.location.href = "./index.html";
+});
+
+window.addEventListener("cloud-sync:remote-update", syncProfileFromStorage);
+window.addEventListener("focus", syncProfileFromStorage);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) syncProfileFromStorage();
 });
 
