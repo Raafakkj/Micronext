@@ -105,6 +105,17 @@ function fileToDataUrl(file) {
   });
 }
 
+function persistCommunityRemote() {
+  fetch("/api/data/communityPosts", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: posts }),
+    keepalive: true
+  }).catch(() => {
+    // cloud-sync retries in background
+  });
+}
+
 async function readPostImage(form) {
   const file = form.image && form.image.files ? form.image.files[0] : null;
   if (!file) return "";
@@ -199,6 +210,8 @@ function renderFeed() {
       if (!target) return;
       target.likes = (target.likes || 0) + 1;
       save(COMMUNITY_KEY, posts);
+      lastPostsFingerprint = JSON.stringify(posts);
+      persistCommunityRemote();
       renderFeed();
     });
   });
@@ -211,6 +224,8 @@ function renderFeed() {
       const removedTitle = posts[index].title;
       posts.splice(index, 1);
       save(COMMUNITY_KEY, posts);
+      lastPostsFingerprint = JSON.stringify(posts);
+      persistCommunityRemote();
       renderFeed();
     });
   });
@@ -240,6 +255,8 @@ function renderFeed() {
       }
 
       save(COMMUNITY_KEY, posts);
+      lastPostsFingerprint = JSON.stringify(posts);
+      persistCommunityRemote();
       renderFeed();
     });
   });
@@ -297,6 +314,7 @@ postForm.addEventListener("submit", async (event) => {
 
   save(COMMUNITY_KEY, posts);
   lastPostsFingerprint = JSON.stringify(posts);
+  persistCommunityRemote();
   postForm.reset();
   setPostMessage("Publicacao enviada para a comunidade.", true);
   renderFeed();

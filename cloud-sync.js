@@ -22,6 +22,7 @@
   let isApplyingRemote = false;
   let syncTimer = null;
   let lastLocalWriteAt = 0;
+  let pendingSync = false;
   const dirtyCategories = new Set();
 
   function safeParse(raw, fallback) {
@@ -129,6 +130,7 @@
   function syncStateNow() {
     if (isApplyingRemote) return;
     if (!dirtyCategories.size) return;
+    if (pendingSync) return;
 
     const snapshot = readLocalState();
     const patch = {};
@@ -136,16 +138,21 @@
       patch[category] = snapshot[category];
     });
     dirtyCategories.clear();
+    pendingSync = true;
 
     fetch("/api/data", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
       keepalive: true
-    }).catch(() => {
-      Object.keys(patch).forEach((category) => dirtyCategories.add(category));
-      // Retry naturally in next user interaction.
-    });
+    })
+      .catch(() => {
+        Object.keys(patch).forEach((category) => dirtyCategories.add(category));
+        // Retry naturally in next user interaction.
+      })
+      .finally(() => {
+        pendingSync = false;
+      });
   }
 
   async function fetchRemoteState() {
@@ -161,7 +168,8 @@
 
   async function pullRemoteState() {
     if (isApplyingRemote) return;
-    if (Date.now() - lastLocalWriteAt < 1500) return;
+    if (pendingSync || dirtyCategories.size > 0) return;
+    if (Date.now() - lastLocalWriteAt < 6000) return;
 
     const remoteState = await fetchRemoteState();
     if (!remoteState) return;

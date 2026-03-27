@@ -391,10 +391,6 @@ window.addEventListener("cloud-sync:remote-update", () => {
   renderLogsBadge();
 });
 
-setInterval(() => {
-  applyRemoteBoardIfChanged();
-}, 2000);
-
 window.addEventListener("focus", () => {
   applyRemoteBoardIfChanged();
 });
