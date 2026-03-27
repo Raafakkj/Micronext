@@ -13,6 +13,7 @@ const postMessage = document.getElementById("community-message");
 const feedEl = document.getElementById("community-feed");
 const filterType = document.getElementById("filter-type");
 const filterSearch = document.getElementById("filter-search");
+const MAX_IMAGE_BYTES = 1_200_000;
 
 function safeRead(key, fallback) {
   try {
@@ -94,6 +95,30 @@ function renderAvatar(profile) {
   return `<span class="community-avatar">${escapeHtml(initials(profile.username || profile.fullName))}</span>`;
 }
 
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Falha ao ler imagem."));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function readPostImage(form) {
+  const file = form.image && form.image.files ? form.image.files[0] : null;
+  if (!file) return "";
+
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Selecione um arquivo de imagem valido.");
+  }
+
+  if (file.size > MAX_IMAGE_BYTES) {
+    throw new Error("Imagem muito grande. Use ate 1.2MB.");
+  }
+
+  return fileToDataUrl(file);
+}
+
 function renderFeed() {
   const filtered = posts.filter(postMatchesFilter).sort((a, b) => b.createdAt - a.createdAt);
   feedEl.innerHTML = "";
@@ -149,6 +174,7 @@ function renderFeed() {
       <h4>${escapeHtml(post.title)}</h4>
       ${post.sprint ? `<p class="community-sprint">Sprint: ${escapeHtml(post.sprint)}</p>` : ""}
       <p>${escapeHtml(post.content)}</p>
+      ${post.imageData ? `<img class="community-post-image" src="${escapeHtml(post.imageData)}" alt="Imagem da publicacao" loading="lazy" />` : ""}
 
       <div class="community-actions">
         <button type="button" data-action="like" data-id="${post.id}">👍 ${post.likes || 0}</button>
@@ -218,7 +244,7 @@ function renderFeed() {
   });
 }
 
-postForm.addEventListener("submit", (event) => {
+postForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const type = postForm.type.value;
@@ -231,6 +257,14 @@ postForm.addEventListener("submit", (event) => {
     return;
   }
 
+  let imageData = "";
+  try {
+    imageData = await readPostImage(postForm);
+  } catch (error) {
+    setPostMessage(error instanceof Error ? error.message : "Nao foi possivel carregar a imagem.");
+    return;
+  }
+
   posts.unshift({
     id: uid(),
     rm: session.rm,
@@ -240,6 +274,7 @@ postForm.addEventListener("submit", (event) => {
     title,
     sprint,
     content,
+    imageData,
     likes: 0,
     comments: [],
     createdAt: Date.now()

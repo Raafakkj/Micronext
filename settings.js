@@ -1,5 +1,4 @@
-﻿const PROFILES_KEY = "fiap_kanban_profiles";
-const CHAT_KEY = "fiap_kanban_chat";
+const PROFILES_KEY = "fiap_kanban_profiles";
 const SPRINTS_KEY = "fiap_sprints_data";
 const UNREAD_LOGS_KEY = "fiap_kanban_unread_logs";
 
@@ -58,10 +57,6 @@ function ensureProfileExists(profiles, rm) {
 }
 
 function migrateRmReferences(oldRm, newRm) {
-  const chat = safeRead(CHAT_KEY, []);
-  const updatedChat = chat.map((msg) => (msg.rm === oldRm ? { ...msg, rm: newRm } : msg));
-  localStorage.setItem(CHAT_KEY, JSON.stringify(updatedChat));
-
   const sprints = safeRead(SPRINTS_KEY, []);
   const updatedSprints = sprints.map((sprint) => (sprint.rm === oldRm ? { ...sprint, rm: newRm } : sprint));
   localStorage.setItem(SPRINTS_KEY, JSON.stringify(updatedSprints));
@@ -263,3 +258,4 @@ logoutBtn.addEventListener("click", () => {
   clearSession();
   window.location.href = "./index.html";
 });
+

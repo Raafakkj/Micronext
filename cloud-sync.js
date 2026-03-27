@@ -3,11 +3,9 @@
     users: "fiap_kanban_users",
     profiles: "fiap_kanban_profiles",
     board: "fiap_kanban_data",
-    chat: "fiap_kanban_chat",
     logs: "fiap_kanban_logs",
     sprints: "fiap_sprints_data",
-    communityPosts: "fiap_community_posts",
-    presenceByRm: "fiap_online_presence"
+    communityPosts: "fiap_community_posts"
   };
 
   const UNREAD_PREFIX = "fiap_kanban_unread_logs_";
@@ -15,12 +13,10 @@
     users: [],
     profiles: {},
     board: null,
-    chat: [],
     logs: [],
     sprints: [],
     communityPosts: [],
-    unreadByRm: {},
-    presenceByRm: {}
+    unreadByRm: {}
   };
 
   let isApplyingRemote = false;
@@ -43,7 +39,6 @@
       Array.isArray(state.users) && state.users.length > 0 ||
       state.profiles && Object.keys(state.profiles).length > 0 ||
       state.board && Object.keys(state.board).length > 0 ||
-      Array.isArray(state.chat) && state.chat.length > 0 ||
       Array.isArray(state.logs) && state.logs.length > 0 ||
       Array.isArray(state.sprints) && state.sprints.length > 0 ||
       Array.isArray(state.communityPosts) && state.communityPosts.length > 0 ||
@@ -73,12 +68,10 @@
       users: safeParse(localStorage.getItem(STORAGE_KEYS.users), DEFAULT_STATE.users),
       profiles: safeParse(localStorage.getItem(STORAGE_KEYS.profiles), DEFAULT_STATE.profiles),
       board: safeParse(localStorage.getItem(STORAGE_KEYS.board), DEFAULT_STATE.board),
-      chat: safeParse(localStorage.getItem(STORAGE_KEYS.chat), DEFAULT_STATE.chat),
       logs: safeParse(localStorage.getItem(STORAGE_KEYS.logs), DEFAULT_STATE.logs),
       sprints: safeParse(localStorage.getItem(STORAGE_KEYS.sprints), DEFAULT_STATE.sprints),
       communityPosts: safeParse(localStorage.getItem(STORAGE_KEYS.communityPosts), DEFAULT_STATE.communityPosts),
-      unreadByRm: readUnreadFromLocal(),
-      presenceByRm: safeParse(localStorage.getItem(STORAGE_KEYS.presenceByRm), DEFAULT_STATE.presenceByRm)
+      unreadByRm: readUnreadFromLocal()
     };
   }
 

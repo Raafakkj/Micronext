@@ -8,24 +8,20 @@ const DEFAULT_STATE = {
   users: [],
   profiles: {},
   board: null,
-  chat: [],
   logs: [],
   sprints: [],
   communityPosts: [],
-  unreadByRm: {},
-  presenceByRm: {}
+  unreadByRm: {}
 };
 
 const CATEGORY_DESCRIPTIONS = {
   users: "Usuarios e credenciais",
   profiles: "Perfis de usuario",
   board: "Cards do Kanban",
-  chat: "Mensagens do chat",
   logs: "Historico de alteracoes",
   sprints: "Planejamento de sprints",
   communityPosts: "Feed da comunidade",
-  unreadByRm: "Notificacoes nao lidas por RM",
-  presenceByRm: "Presenca e atividade de usuarios"
+  unreadByRm: "Notificacoes nao lidas por RM"
 };
 
 function cloneDefaultState() {
@@ -45,12 +41,10 @@ function normalizeState(input) {
   next.users = Array.isArray(input.users) ? input.users : base.users;
   next.profiles = isPlainObject(input.profiles) ? input.profiles : base.profiles;
   next.board = isPlainObject(input.board) || input.board === null ? input.board : base.board;
-  next.chat = Array.isArray(input.chat) ? input.chat : base.chat;
   next.logs = Array.isArray(input.logs) ? input.logs : base.logs;
   next.sprints = Array.isArray(input.sprints) ? input.sprints : base.sprints;
   next.communityPosts = Array.isArray(input.communityPosts) ? input.communityPosts : base.communityPosts;
   next.unreadByRm = isPlainObject(input.unreadByRm) ? input.unreadByRm : base.unreadByRm;
-  next.presenceByRm = isPlainObject(input.presenceByRm) ? input.presenceByRm : base.presenceByRm;
 
   return next;
 }
@@ -61,12 +55,10 @@ function hasMeaningfulData(state) {
     data.users.length > 0 ||
     Object.keys(data.profiles).length > 0 ||
     (data.board && Object.keys(data.board).length > 0) ||
-    data.chat.length > 0 ||
     data.logs.length > 0 ||
     data.sprints.length > 0 ||
     data.communityPosts.length > 0 ||
-    Object.keys(data.unreadByRm).length > 0 ||
-    Object.keys(data.presenceByRm).length > 0
+    Object.keys(data.unreadByRm).length > 0
   );
 }
 

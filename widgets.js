@@ -7,42 +7,12 @@
   const logsList = document.getElementById("logs-list");
   const logsBadge = document.getElementById("logs-badge");
 
-  const usersToggle = document.getElementById("users-toggle");
-  const usersDropdown = document.getElementById("users-dropdown");
-  const usersList = document.getElementById("users-list");
-  const usersBadge = document.getElementById("users-badge");
-
-  const chatFab = document.getElementById("chat-fab");
-  const chatWidget = document.getElementById("chat-widget");
-  const chatClose = document.getElementById("chat-close");
-  const chatMessagesEl = document.getElementById("chat-messages");
-  const chatForm = document.getElementById("chat-form");
-
-  if (
-    !logsToggle ||
-    !logsDropdown ||
-    !logsList ||
-    !logsBadge ||
-    !chatFab ||
-    !chatWidget ||
-    !chatClose ||
-    !chatMessagesEl ||
-    !chatForm ||
-    !usersToggle ||
-    !usersDropdown ||
-    !usersList ||
-    !usersBadge
-  ) {
+  if (!logsToggle || !logsDropdown || !logsList || !logsBadge) {
     return;
   }
 
-  const CHAT_KEY = "fiap_kanban_chat";
   const LOGS_KEY = "fiap_kanban_logs";
-  const PROFILES_KEY = "fiap_kanban_profiles";
   const UNREAD_LOGS_KEY = "fiap_kanban_unread_logs";
-  const PRESENCE_KEY = "fiap_online_presence";
-
-  const ONLINE_WINDOW_MS = 65000;
 
   function safeRead(key, fallback) {
     try {
@@ -51,17 +21,6 @@
     } catch {
       return fallback;
     }
-  }
-
-  function save(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
-  }
-
-  function uid() {
-    if (typeof crypto !== "undefined" && crypto.randomUUID) {
-      return crypto.randomUUID();
-    }
-    return `${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
   }
 
   function formatTime(timestamp) {
@@ -73,51 +32,7 @@
     });
   }
 
-  function initialsFrom(name) {
-    const parts = String(name || "RM").trim().split(" ").filter(Boolean);
-    if (!parts.length) return "RM";
-    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-  }
-
-  function getProfiles() {
-    return safeRead(PROFILES_KEY, {});
-  }
-
-  function getProfileByRm(rm, fallbackName) {
-    const source = getProfiles()[rm] || {};
-    return {
-      fullName: source.fullName || fallbackName || `Aluno RM ${rm}`,
-      username: source.username || fallbackName || `aluno${rm}`,
-      role: source.role || "Developer",
-      avatar: source.avatar || "",
-      rm
-    };
-  }
-
-  function buildAvatarElement(profile) {
-    const avatar = document.createElement("div");
-    avatar.className = "chat-avatar";
-
-    if (profile.avatar) {
-      avatar.style.backgroundImage = `url(${profile.avatar})`;
-      avatar.classList.add("has-image");
-    } else {
-      avatar.textContent = initialsFrom(profile.username || profile.fullName);
-    }
-
-    return avatar;
-  }
-
-  let logs = safeRead(LOGS_KEY, []);
-  let chat = safeRead(CHAT_KEY, []);
-  let unreadLogs = Number(localStorage.getItem(`${UNREAD_LOGS_KEY}_${session.rm}`) || "0");
-
-  function saveUnreadLogs() {
-    localStorage.setItem(`${UNREAD_LOGS_KEY}_${session.rm}`, String(unreadLogs));
-  }
-
-  function renderLogsBadge() {
+  function renderLogsBadge(unreadLogs) {
     if (unreadLogs > 0) {
       logsBadge.textContent = String(Math.min(unreadLogs, 99));
       logsBadge.classList.remove("hidden");
@@ -129,6 +44,9 @@
   }
 
   function renderLogs() {
+    const logs = safeRead(LOGS_KEY, []);
+    const unreadLogs = Number(localStorage.getItem(`${UNREAD_LOGS_KEY}_${session.rm}`) || "0");
+
     logsList.innerHTML = "";
 
     if (!logs.length) {
@@ -150,251 +68,17 @@
       });
     }
 
-    renderLogsBadge();
+    renderLogsBadge(Number.isNaN(unreadLogs) ? 0 : unreadLogs);
   }
-
-  function addLog(text) {
-    logs.unshift({ id: uid(), text, at: Date.now() });
-    if (logs.length > 40) logs.length = 40;
-    unreadLogs += 1;
-    save(LOGS_KEY, logs);
-    saveUnreadLogs();
-    renderLogs();
-  }
-
-  function renderChat() {
-    chatMessagesEl.innerHTML = "";
-
-    if (!chat.length) {
-      const empty = document.createElement("p");
-      empty.className = "chat-empty";
-      empty.textContent = "Sem mensagens ainda. Inicie a conversa do grupo.";
-      chatMessagesEl.appendChild(empty);
-      return;
-    }
-
-    chat.slice(-80).forEach((message) => {
-      const profile = getProfileByRm(message.rm, message.name);
-
-      const bubble = document.createElement("article");
-      bubble.className = "chat-bubble";
-
-      const avatar = buildAvatarElement(profile);
-
-      const body = document.createElement("div");
-      body.className = "chat-bubble-body";
-
-      const header = document.createElement("header");
-      const author = document.createElement("strong");
-      author.className = "chat-author";
-      author.textContent = profile.username;
-
-      const widget = document.createElement("div");
-      widget.className = "profile-widget";
-
-      const widgetAvatar = buildAvatarElement(profile);
-      widgetAvatar.classList.add("small");
-
-      const info = document.createElement("div");
-      info.className = "profile-widget-info";
-
-      const fullName = document.createElement("p");
-      fullName.textContent = profile.fullName;
-      const rm = document.createElement("small");
-      rm.textContent = `RM ${profile.rm} • ${profile.role}`;
-
-      info.appendChild(fullName);
-      info.appendChild(rm);
-      widget.appendChild(widgetAvatar);
-      widget.appendChild(info);
-
-      author.appendChild(widget);
-
-      const time = document.createElement("small");
-      time.textContent = formatTime(message.at);
-
-      const content = document.createElement("p");
-      content.textContent = message.text;
-
-      header.appendChild(author);
-      header.appendChild(time);
-      body.appendChild(header);
-      body.appendChild(content);
-
-      bubble.appendChild(avatar);
-      bubble.appendChild(body);
-
-      chatMessagesEl.appendChild(bubble);
-    });
-
-    chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
-  }
-
-  function readPresence() {
-    const presence = safeRead(PRESENCE_KEY, {});
-    return presence && typeof presence === "object" ? presence : {};
-  }
-
-  function writePresence(presence) {
-    save(PRESENCE_KEY, presence);
-  }
-
-  function touchPresence() {
-    const me = getProfileByRm(session.rm, `aluno${session.rm}`);
-    const presence = readPresence();
-
-    presence[session.rm] = {
-      rm: session.rm,
-      username: me.username,
-      fullName: me.fullName,
-      role: me.role,
-      avatar: me.avatar,
-      at: Date.now(),
-      page: window.location.pathname.split("/").pop() || "app"
-    };
-
-    writePresence(presence);
-    renderUsers();
-  }
-
-  function renderUsers() {
-    const now = Date.now();
-    const presence = readPresence();
-    const list = Object.values(presence)
-      .filter((entry) => entry && entry.rm)
-      .sort((a, b) => Number(b.at || 0) - Number(a.at || 0));
-
-    const onlineCount = list.filter((entry) => now - Number(entry.at || 0) <= ONLINE_WINDOW_MS).length;
-
-    usersBadge.textContent = String(Math.min(onlineCount, 99));
-    if (onlineCount > 0) {
-      usersBadge.classList.remove("hidden");
-    } else {
-      usersBadge.classList.add("hidden");
-    }
-
-    usersList.innerHTML = "";
-
-    if (!list.length) {
-      const empty = document.createElement("li");
-      empty.className = "log-item empty";
-      empty.textContent = "Nenhum usuario detectado ainda.";
-      usersList.appendChild(empty);
-      return;
-    }
-
-    list.forEach((entry) => {
-      const isOnline = now - Number(entry.at || 0) <= ONLINE_WINDOW_MS;
-
-      const li = document.createElement("li");
-      li.className = "user-item";
-
-      const left = document.createElement("div");
-      const strong = document.createElement("strong");
-      strong.textContent = `${entry.username || `aluno${entry.rm}`} (${entry.role || "Developer"})`;
-
-      const small = document.createElement("small");
-      small.textContent = `RM ${entry.rm} • ${isOnline ? "Ativo agora" : `Visto em ${formatTime(entry.at)}`}`;
-
-      left.appendChild(strong);
-      left.appendChild(small);
-
-      const status = document.createElement("span");
-      status.className = "user-status";
-
-      const dot = document.createElement("span");
-      dot.className = `status-dot ${isOnline ? "online" : "offline"}`;
-
-      const text = document.createElement("span");
-      text.textContent = isOnline ? "Online" : "Offline";
-
-      status.appendChild(dot);
-      status.appendChild(text);
-
-      li.appendChild(left);
-      li.appendChild(status);
-      usersList.appendChild(li);
-    });
-  }
-
-  function refreshFromStorage() {
-    const nextChat = safeRead(CHAT_KEY, []);
-    const nextLogs = safeRead(LOGS_KEY, []);
-    const nextUnread = Number(localStorage.getItem(`${UNREAD_LOGS_KEY}_${session.rm}`) || "0");
-
-    const chatChanged = JSON.stringify(nextChat) !== JSON.stringify(chat);
-    const logsChanged = JSON.stringify(nextLogs) !== JSON.stringify(logs);
-
-    chat = nextChat;
-    logs = nextLogs;
-    unreadLogs = Number.isNaN(nextUnread) ? 0 : nextUnread;
-
-    if (chatChanged) renderChat();
-    if (logsChanged) renderLogs();
-    if (!logsChanged) renderLogsBadge();
-
-    renderUsers();
-  }
-
-  function openChat() {
-    chatWidget.classList.remove("hidden");
-    chatFab.classList.add("hidden");
-  }
-
-  function closeChat() {
-    chatWidget.classList.add("hidden");
-    chatFab.classList.remove("hidden");
-  }
-
-  chatFab.addEventListener("click", openChat);
-  chatClose.addEventListener("click", closeChat);
-
-  chatForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-
-    const input = chatForm.message;
-    const value = input.value.trim();
-    if (!value) return;
-
-    const me = getProfileByRm(session.rm, `aluno${session.rm}`);
-    chat.push({
-      id: uid(),
-      rm: session.rm,
-      name: me.username,
-      text: value,
-      at: Date.now()
-    });
-
-    if (chat.length > 200) {
-      chat.splice(0, chat.length - 200);
-    }
-
-    save(CHAT_KEY, chat);
-    renderChat();
-    addLog(`${me.username} enviou mensagem no chat.`);
-    input.value = "";
-    touchPresence();
-  });
 
   logsToggle.addEventListener("click", () => {
     const willOpen = logsDropdown.classList.contains("hidden");
     logsDropdown.classList.toggle("hidden");
 
     if (willOpen) {
-      unreadLogs = 0;
-      saveUnreadLogs();
-      renderLogsBadge();
+      localStorage.setItem(`${UNREAD_LOGS_KEY}_${session.rm}`, "0");
+      renderLogs();
     }
-
-    usersDropdown.classList.add("hidden");
-    touchPresence();
-  });
-
-  usersToggle.addEventListener("click", () => {
-    usersDropdown.classList.toggle("hidden");
-    logsDropdown.classList.add("hidden");
-    touchPresence();
-    renderUsers();
   });
 
   document.addEventListener("click", (event) => {
@@ -404,36 +88,13 @@
     if (!logsDropdown.contains(target) && !logsToggle.contains(target)) {
       logsDropdown.classList.add("hidden");
     }
-
-    if (!usersDropdown.contains(target) && !usersToggle.contains(target)) {
-      usersDropdown.classList.add("hidden");
-    }
   });
 
-  window.addEventListener("cloud-sync:remote-update", refreshFromStorage);
-
-  setInterval(() => {
-    refreshFromStorage();
-  }, 3000);
-
-  setInterval(() => {
-    touchPresence();
-  }, 20000);
-
+  window.addEventListener("cloud-sync:remote-update", renderLogs);
+  window.addEventListener("focus", renderLogs);
   document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) {
-      touchPresence();
-      refreshFromStorage();
-    }
+    if (!document.hidden) renderLogs();
   });
 
-  window.addEventListener("focus", () => {
-    touchPresence();
-    refreshFromStorage();
-  });
-
-  touchPresence();
-  renderChat();
   renderLogs();
-  renderUsers();
 })();

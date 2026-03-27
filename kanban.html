@@ -42,9 +42,6 @@
             <button id="logs-toggle" class="notif-btn" type="button" aria-label="Ver notificacoes">
               🔔 <span id="logs-badge" class="badge">0</span>
             </button>
-            <button id="users-toggle" class="notif-btn" type="button" aria-label="Ver usuarios online">
-              👥 <span id="users-badge" class="badge">0</span>
-            </button>
             <button id="logout" class="danger-btn" type="button">Sair</button>
           </nav>
         </header>
@@ -87,30 +84,11 @@
           <ul id="logs-list" class="logs-list"></ul>
         </section>
 
-        <section id="users-dropdown" class="panel users-dropdown hidden">
-          <h3>Usuarios</h3>
-          <ul id="users-list" class="users-list"></ul>
-        </section>
-
         <button id="download-pdf" class="download-pdf-btn" type="button" aria-label="Baixar PDF do Kanban">
           ⬇ PDF
         </button>
       </main>
     </div>
-
-    <button id="chat-fab" class="chat-fab" type="button" aria-label="Abrir chat">💬</button>
-
-    <section id="chat-widget" class="chat-widget hidden" aria-label="Chat do grupo">
-      <header>
-        <h3>Chat do Grupo</h3>
-        <button id="chat-close" type="button" class="ghost-btn">Fechar</button>
-      </header>
-      <div id="chat-messages" class="chat-messages"></div>
-      <form id="chat-form" class="chat-form">
-        <input id="chat-input" name="message" type="text" placeholder="Escreva para o grupo..." maxlength="220" required />
-        <button type="submit">Enviar</button>
-      </form>
-    </section>
 
     <script src="./cloud-sync.js"></script>
     <script src="./auth-utils.js"></script>

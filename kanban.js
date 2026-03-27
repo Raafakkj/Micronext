@@ -1,10 +1,7 @@
-﻿const BOARD_KEY = "fiap_kanban_data";
-const CHAT_KEY = "fiap_kanban_chat";
+const BOARD_KEY = "fiap_kanban_data";
 const LOGS_KEY = "fiap_kanban_logs";
 const UNREAD_LOGS_KEY = "fiap_kanban_unread_logs";
 const PROFILES_KEY = "fiap_kanban_profiles";
-const PRESENCE_KEY = "fiap_online_presence";
-const ONLINE_WINDOW_MS = 65000;
 
 const COLUMN_IDS = ["todo", "doing", "done"];
 const COLUMN_LABELS = {
@@ -20,20 +17,12 @@ if (!session) {
 
 const userInfo = document.getElementById("user-info");
 const logoutBtn = document.getElementById("logout");
-const chatFab = document.getElementById("chat-fab");
-const chatWidget = document.getElementById("chat-widget");
-const chatClose = document.getElementById("chat-close");
-const chatMessagesEl = document.getElementById("chat-messages");
-const chatForm = document.getElementById("chat-form");
 const logsList = document.getElementById("logs-list");
 const logsToggle = document.getElementById("logs-toggle");
 const logsDropdown = document.getElementById("logs-dropdown");
 const logsBadge = document.getElementById("logs-badge");
-const usersToggle = document.getElementById("users-toggle");
-const usersDropdown = document.getElementById("users-dropdown");
-const usersList = document.getElementById("users-list");
-const usersBadge = document.getElementById("users-badge");
 const downloadPdfBtn = document.getElementById("download-pdf");
+let lastBoardFingerprint = "";
 
 function safeRead(key, fallback) {
   try {
@@ -86,7 +75,6 @@ function normalizeBoard(input) {
   if (!input || typeof input !== "object") return base;
 
   const normalized = {};
-
   COLUMN_IDS.forEach((columnId) => {
     const items = Array.isArray(input[columnId]) ? input[columnId] : base[columnId];
     normalized[columnId] = items.map((item) => {
@@ -104,16 +92,11 @@ function normalizeBoard(input) {
 }
 
 const board = normalizeBoard(safeRead(BOARD_KEY, null));
-const chat = safeRead(CHAT_KEY, []);
 const logs = safeRead(LOGS_KEY, []);
 let unreadLogs = Number(localStorage.getItem(`${UNREAD_LOGS_KEY}_${session.rm}`) || "0");
 
 function saveBoard() {
   localStorage.setItem(BOARD_KEY, JSON.stringify(board));
-}
-
-function saveChat() {
-  localStorage.setItem(CHAT_KEY, JSON.stringify(chat));
 }
 
 function saveLogs() {
@@ -131,33 +114,6 @@ function formatTime(timestamp) {
     hour: "2-digit",
     minute: "2-digit"
   });
-}
-
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll("\"", "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
-function getProfileByRm(rm, fallbackName) {
-  const source = getProfiles()[rm] || {};
-  return {
-    fullName: source.fullName || fallbackName || `Aluno RM ${rm}`,
-    username: source.username || fallbackName || `aluno${rm}`,
-    role: source.role || "Developer",
-    avatar: source.avatar || "",
-    rm
-  };
-}
-
-function initialsFrom(name) {
-  const parts = String(name || "RM").trim().split(" ").filter(Boolean);
-  if (!parts.length) return "RM";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
 function updateHeaderUserInfo() {
@@ -209,97 +165,6 @@ function renderLogs() {
   renderLogsBadge();
 }
 
-function readPresence() {
-  return safeRead(PRESENCE_KEY, {});
-}
-
-function writePresence(presence) {
-  localStorage.setItem(PRESENCE_KEY, JSON.stringify(presence));
-}
-
-function touchPresence() {
-  const presence = readPresence();
-  presence[session.rm] = {
-    rm: session.rm,
-    username: currentProfile.username || `aluno${session.rm}`,
-    fullName: currentProfile.fullName || `Aluno RM ${session.rm}`,
-    role: currentProfile.role || "Developer",
-    avatar: currentProfile.avatar || "",
-    at: Date.now(),
-    page: "kanban.html"
-  };
-  writePresence(presence);
-  renderUsers();
-}
-
-function renderUsers() {
-  if (!usersList || !usersBadge) return;
-
-  const now = Date.now();
-  const presence = readPresence();
-  const list = Object.values(presence)
-    .filter((entry) => entry && entry.rm)
-    .sort((a, b) => Number(b.at || 0) - Number(a.at || 0));
-
-  const onlineCount = list.filter((entry) => now - Number(entry.at || 0) <= ONLINE_WINDOW_MS).length;
-  usersBadge.textContent = String(Math.min(onlineCount, 99));
-  if (onlineCount > 0) {
-    usersBadge.classList.remove("hidden");
-  } else {
-    usersBadge.classList.add("hidden");
-  }
-
-  usersList.innerHTML = "";
-  if (!list.length) {
-    const empty = document.createElement("li");
-    empty.className = "log-item empty";
-    empty.textContent = "Nenhum usuario detectado ainda.";
-    usersList.appendChild(empty);
-    return;
-  }
-
-  list.forEach((entry) => {
-    const isOnline = now - Number(entry.at || 0) <= ONLINE_WINDOW_MS;
-    const li = document.createElement("li");
-    li.className = "user-item";
-
-    const left = document.createElement("div");
-    const strong = document.createElement("strong");
-    strong.textContent = `${entry.username || `aluno${entry.rm}`} (${entry.role || "Developer"})`;
-    const small = document.createElement("small");
-    small.textContent = `RM ${entry.rm} • ${isOnline ? "Ativo agora" : `Visto em ${formatTime(entry.at)}`}`;
-    left.appendChild(strong);
-    left.appendChild(small);
-
-    const status = document.createElement("span");
-    status.className = "user-status";
-    const dot = document.createElement("span");
-    dot.className = `status-dot ${isOnline ? "online" : "offline"}`;
-    const text = document.createElement("span");
-    text.textContent = isOnline ? "Online" : "Offline";
-    status.appendChild(dot);
-    status.appendChild(text);
-
-    li.appendChild(left);
-    li.appendChild(status);
-    usersList.appendChild(li);
-  });
-}
-
-function refreshSharedPanels() {
-  const nextChat = safeRead(CHAT_KEY, []);
-  const nextLogs = safeRead(LOGS_KEY, []);
-  const nextUnread = Number(localStorage.getItem(`${UNREAD_LOGS_KEY}_${session.rm}`) || "0");
-
-  chat.splice(0, chat.length, ...nextChat);
-  logs.splice(0, logs.length, ...nextLogs);
-  unreadLogs = Number.isNaN(nextUnread) ? 0 : nextUnread;
-
-  renderChat();
-  renderLogs();
-  renderUsers();
-}
-
 function createTaskElement(taskData, columnId) {
   const task = document.createElement("article");
   task.className = "task";
@@ -339,6 +204,8 @@ function renderBoard() {
       container.appendChild(createTaskElement(taskData, columnId));
     });
   });
+
+  lastBoardFingerprint = JSON.stringify(board);
 }
 
 function syncFromDom() {
@@ -354,6 +221,18 @@ function syncFromDom() {
   });
 
   saveBoard();
+  lastBoardFingerprint = JSON.stringify(board);
+}
+
+function applyRemoteBoardIfChanged() {
+  const remoteBoard = normalizeBoard(safeRead(BOARD_KEY, null));
+  const remoteFingerprint = JSON.stringify(remoteBoard);
+  if (remoteFingerprint === lastBoardFingerprint) return;
+
+  COLUMN_IDS.forEach((id) => {
+    board[id] = remoteBoard[id];
+  });
+  renderBoard();
 }
 
 let dragMeta = null;
@@ -410,126 +289,6 @@ document.addEventListener("dragstart", (event) => {
 document.addEventListener("dragend", () => {
   dragMeta = null;
 });
-
-function buildAvatarElement(profile) {
-  const avatar = document.createElement("div");
-  avatar.className = "chat-avatar";
-
-  if (profile.avatar) {
-    avatar.style.backgroundImage = `url(${profile.avatar})`;
-    avatar.classList.add("has-image");
-  } else {
-    avatar.textContent = initialsFrom(profile.username || profile.fullName);
-  }
-
-  return avatar;
-}
-
-function renderChat() {
-  chatMessagesEl.innerHTML = "";
-
-  if (!chat.length) {
-    const empty = document.createElement("p");
-    empty.className = "chat-empty";
-    empty.textContent = "Sem mensagens ainda. Inicie a conversa do grupo.";
-    chatMessagesEl.appendChild(empty);
-    return;
-  }
-
-  chat.slice(-40).forEach((message) => {
-    const profile = getProfileByRm(message.rm, message.name);
-
-    const bubble = document.createElement("article");
-    bubble.className = "chat-bubble";
-
-    const avatar = buildAvatarElement(profile);
-
-    const body = document.createElement("div");
-    body.className = "chat-bubble-body";
-
-    const header = document.createElement("header");
-    const author = document.createElement("strong");
-    author.className = "chat-author";
-    author.textContent = profile.username;
-
-    const widget = document.createElement("div");
-    widget.className = "profile-widget";
-
-    const widgetAvatar = buildAvatarElement(profile);
-    widgetAvatar.classList.add("small");
-
-    const info = document.createElement("div");
-    info.className = "profile-widget-info";
-
-    const fullName = document.createElement("p");
-    fullName.textContent = profile.fullName;
-    const rm = document.createElement("small");
-    rm.textContent = `RM ${profile.rm} • ${profile.role}`;
-
-    info.appendChild(fullName);
-    info.appendChild(rm);
-    widget.appendChild(widgetAvatar);
-    widget.appendChild(info);
-
-    author.appendChild(widget);
-
-    const time = document.createElement("small");
-    time.textContent = formatTime(message.at);
-
-    const content = document.createElement("p");
-    content.textContent = message.text;
-
-    header.appendChild(author);
-    header.appendChild(time);
-    body.appendChild(header);
-    body.appendChild(content);
-
-    bubble.appendChild(avatar);
-    bubble.appendChild(body);
-
-    chatMessagesEl.appendChild(bubble);
-  });
-
-  chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
-}
-
-chatForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const input = chatForm.message;
-  const value = input.value.trim();
-  if (!value) return;
-
-  chat.push({
-    id: uid(),
-    rm: session.rm,
-    name: displayName(),
-    text: value,
-    at: Date.now()
-  });
-
-  if (chat.length > 120) {
-    chat.splice(0, chat.length - 120);
-  }
-
-  saveChat();
-  renderChat();
-  addLog(`${displayName()} enviou mensagem no chat.`);
-  input.value = "";
-  touchPresence();
-});
-
-function openChat() {
-  chatWidget.classList.remove("hidden");
-  chatFab.classList.add("hidden");
-}
-
-function closeChat() {
-  chatWidget.classList.add("hidden");
-  chatFab.classList.remove("hidden");
-}
-
-chatFab.addEventListener("click", openChat);
-chatClose.addEventListener("click", closeChat);
 
 downloadPdfBtn.addEventListener("click", () => {
   syncFromDom();
@@ -597,19 +356,7 @@ logsToggle.addEventListener("click", () => {
     saveUnreadLogs();
     renderLogsBadge();
   }
-
-  if (usersDropdown) usersDropdown.classList.add("hidden");
-  touchPresence();
 });
-
-if (usersToggle && usersDropdown) {
-  usersToggle.addEventListener("click", () => {
-    usersDropdown.classList.toggle("hidden");
-    logsDropdown.classList.add("hidden");
-    renderUsers();
-    touchPresence();
-  });
-}
 
 document.addEventListener("click", (event) => {
   const target = event.target;
@@ -618,9 +365,30 @@ document.addEventListener("click", (event) => {
   if (!logsDropdown.contains(target) && !logsToggle.contains(target)) {
     logsDropdown.classList.add("hidden");
   }
+});
 
-  if (usersDropdown && usersToggle && !usersDropdown.contains(target) && !usersToggle.contains(target)) {
-    usersDropdown.classList.add("hidden");
+window.addEventListener("cloud-sync:remote-update", () => {
+  applyRemoteBoardIfChanged();
+
+  const remoteLogs = safeRead(LOGS_KEY, []);
+  logs.splice(0, logs.length, ...remoteLogs);
+  unreadLogs = Number(localStorage.getItem(`${UNREAD_LOGS_KEY}_${session.rm}`) || "0");
+
+  renderLogs();
+  renderLogsBadge();
+});
+
+setInterval(() => {
+  applyRemoteBoardIfChanged();
+}, 2000);
+
+window.addEventListener("focus", () => {
+  applyRemoteBoardIfChanged();
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    applyRemoteBoardIfChanged();
   }
 });
 
@@ -633,25 +401,10 @@ if (!logs.length) {
   addLog(`${displayName()} acessou o board.`);
 }
 
-window.addEventListener("cloud-sync:remote-update", refreshSharedPanels);
-setInterval(refreshSharedPanels, 3000);
-setInterval(touchPresence, 20000);
-document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) {
-    touchPresence();
-    refreshSharedPanels();
-  }
-});
-window.addEventListener("focus", () => {
-  touchPresence();
-  refreshSharedPanels();
-});
-
 updateHeaderUserInfo();
 renderBoard();
-renderChat();
 renderLogs();
 renderLogsBadge();
-renderUsers();
-touchPresence();
-saveBoard();
+if (!safeRead(BOARD_KEY, null)) {
+  saveBoard();
+}

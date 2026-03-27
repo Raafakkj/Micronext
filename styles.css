@@ -875,6 +875,16 @@ button {
   color: #ececf0;
 }
 
+.community-post-image {
+  width: 100%;
+  max-height: 380px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid #35353d;
+  margin: 0 0 10px;
+  display: block;
+}
+
 .community-sprint {
   margin: 0 0 8px;
   font-size: 0.82rem;
