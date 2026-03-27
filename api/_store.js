@@ -12,7 +12,8 @@ const DEFAULT_STATE = {
   logs: [],
   sprints: [],
   communityPosts: [],
-  unreadByRm: {}
+  unreadByRm: {},
+  presenceByRm: {}
 };
 
 const CATEGORY_DESCRIPTIONS = {
@@ -23,7 +24,8 @@ const CATEGORY_DESCRIPTIONS = {
   logs: "Historico de alteracoes",
   sprints: "Planejamento de sprints",
   communityPosts: "Feed da comunidade",
-  unreadByRm: "Notificacoes nao lidas por RM"
+  unreadByRm: "Notificacoes nao lidas por RM",
+  presenceByRm: "Presenca e atividade de usuarios"
 };
 
 function cloneDefaultState() {
@@ -48,6 +50,7 @@ function normalizeState(input) {
   next.sprints = Array.isArray(input.sprints) ? input.sprints : base.sprints;
   next.communityPosts = Array.isArray(input.communityPosts) ? input.communityPosts : base.communityPosts;
   next.unreadByRm = isPlainObject(input.unreadByRm) ? input.unreadByRm : base.unreadByRm;
+  next.presenceByRm = isPlainObject(input.presenceByRm) ? input.presenceByRm : base.presenceByRm;
 
   return next;
 }
@@ -62,7 +65,8 @@ function hasMeaningfulData(state) {
     data.logs.length > 0 ||
     data.sprints.length > 0 ||
     data.communityPosts.length > 0 ||
-    Object.keys(data.unreadByRm).length > 0
+    Object.keys(data.unreadByRm).length > 0 ||
+    Object.keys(data.presenceByRm).length > 0
   );
 }
 

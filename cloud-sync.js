@@ -6,7 +6,8 @@
     chat: "fiap_kanban_chat",
     logs: "fiap_kanban_logs",
     sprints: "fiap_sprints_data",
-    communityPosts: "fiap_community_posts"
+    communityPosts: "fiap_community_posts",
+    presenceByRm: "fiap_online_presence"
   };
 
   const UNREAD_PREFIX = "fiap_kanban_unread_logs_";
@@ -18,11 +19,13 @@
     logs: [],
     sprints: [],
     communityPosts: [],
-    unreadByRm: {}
+    unreadByRm: {},
+    presenceByRm: {}
   };
 
   let isApplyingRemote = false;
   let syncTimer = null;
+  let lastLocalWriteAt = 0;
 
   function safeParse(raw, fallback) {
     if (raw == null) return fallback;
@@ -73,7 +76,8 @@
       logs: safeParse(localStorage.getItem(STORAGE_KEYS.logs), DEFAULT_STATE.logs),
       sprints: safeParse(localStorage.getItem(STORAGE_KEYS.sprints), DEFAULT_STATE.sprints),
       communityPosts: safeParse(localStorage.getItem(STORAGE_KEYS.communityPosts), DEFAULT_STATE.communityPosts),
-      unreadByRm: readUnreadFromLocal()
+      unreadByRm: readUnreadFromLocal(),
+      presenceByRm: safeParse(localStorage.getItem(STORAGE_KEYS.presenceByRm), DEFAULT_STATE.presenceByRm)
     };
   }
 
@@ -143,9 +147,41 @@
     });
   }
 
+  async function fetchRemoteState() {
+    try {
+      const response = await fetch("/api/data", { method: "GET", cache: "no-store" });
+      if (!response.ok) return null;
+      const payload = await response.json();
+      return payload && payload.ok ? payload.state : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function pullRemoteState() {
+    if (isApplyingRemote) return;
+    if (Date.now() - lastLocalWriteAt < 1500) return;
+
+    const remoteState = await fetchRemoteState();
+    if (!remoteState) return;
+
+    const localSnapshot = JSON.stringify(readLocalState());
+    const remoteSnapshot = JSON.stringify(remoteState);
+
+    if (localSnapshot === remoteSnapshot) return;
+
+    applyRemoteState(remoteState);
+    window.dispatchEvent(
+      new CustomEvent("cloud-sync:remote-update", {
+        detail: { at: Date.now() }
+      })
+    );
+  }
+
   function scheduleSync() {
     if (isApplyingRemote) return;
 
+    lastLocalWriteAt = Date.now();
     clearTimeout(syncTimer);
     syncTimer = setTimeout(syncStateNow, 500);
   }
@@ -187,6 +223,12 @@
 
     patchStorageMethods();
     window.addEventListener("beforeunload", syncStateNow);
+    setInterval(pullRemoteState, 2500);
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) {
+        pullRemoteState();
+      }
+    });
   }
 
   bootstrap();

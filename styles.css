@@ -595,7 +595,8 @@ button {
   right: 18px;
   bottom: 18px;
   width: min(640px, calc(100vw - 24px));
-  max-height: 84vh;
+  min-height: min(640px, 82vh);
+  max-height: 88vh;
   background: #111114;
   border: 1px solid #323238;
   border-radius: 14px;
@@ -627,7 +628,8 @@ button {
 }
 
 .chat-messages {
-  max-height: 62vh;
+  max-height: 74vh;
+  min-height: 360px;
   overflow-y: auto;
   display: grid;
   gap: 10px;
@@ -1088,7 +1090,8 @@ button {
     left: 12px;
     width: auto;
     bottom: 12px;
-    max-height: 82vh;
+    min-height: min(72vh, 560px);
+    max-height: 86vh;
   }
 
   .chat-fab {

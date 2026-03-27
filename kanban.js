@@ -3,6 +3,8 @@ const CHAT_KEY = "fiap_kanban_chat";
 const LOGS_KEY = "fiap_kanban_logs";
 const UNREAD_LOGS_KEY = "fiap_kanban_unread_logs";
 const PROFILES_KEY = "fiap_kanban_profiles";
+const PRESENCE_KEY = "fiap_online_presence";
+const ONLINE_WINDOW_MS = 65000;
 
 const COLUMN_IDS = ["todo", "doing", "done"];
 const COLUMN_LABELS = {
@@ -27,6 +29,10 @@ const logsList = document.getElementById("logs-list");
 const logsToggle = document.getElementById("logs-toggle");
 const logsDropdown = document.getElementById("logs-dropdown");
 const logsBadge = document.getElementById("logs-badge");
+const usersToggle = document.getElementById("users-toggle");
+const usersDropdown = document.getElementById("users-dropdown");
+const usersList = document.getElementById("users-list");
+const usersBadge = document.getElementById("users-badge");
 const downloadPdfBtn = document.getElementById("download-pdf");
 
 function safeRead(key, fallback) {
@@ -201,6 +207,97 @@ function renderLogs() {
   }
 
   renderLogsBadge();
+}
+
+function readPresence() {
+  return safeRead(PRESENCE_KEY, {});
+}
+
+function writePresence(presence) {
+  localStorage.setItem(PRESENCE_KEY, JSON.stringify(presence));
+}
+
+function touchPresence() {
+  const presence = readPresence();
+  presence[session.rm] = {
+    rm: session.rm,
+    username: currentProfile.username || `aluno${session.rm}`,
+    fullName: currentProfile.fullName || `Aluno RM ${session.rm}`,
+    role: currentProfile.role || "Developer",
+    avatar: currentProfile.avatar || "",
+    at: Date.now(),
+    page: "kanban.html"
+  };
+  writePresence(presence);
+  renderUsers();
+}
+
+function renderUsers() {
+  if (!usersList || !usersBadge) return;
+
+  const now = Date.now();
+  const presence = readPresence();
+  const list = Object.values(presence)
+    .filter((entry) => entry && entry.rm)
+    .sort((a, b) => Number(b.at || 0) - Number(a.at || 0));
+
+  const onlineCount = list.filter((entry) => now - Number(entry.at || 0) <= ONLINE_WINDOW_MS).length;
+  usersBadge.textContent = String(Math.min(onlineCount, 99));
+  if (onlineCount > 0) {
+    usersBadge.classList.remove("hidden");
+  } else {
+    usersBadge.classList.add("hidden");
+  }
+
+  usersList.innerHTML = "";
+  if (!list.length) {
+    const empty = document.createElement("li");
+    empty.className = "log-item empty";
+    empty.textContent = "Nenhum usuario detectado ainda.";
+    usersList.appendChild(empty);
+    return;
+  }
+
+  list.forEach((entry) => {
+    const isOnline = now - Number(entry.at || 0) <= ONLINE_WINDOW_MS;
+    const li = document.createElement("li");
+    li.className = "user-item";
+
+    const left = document.createElement("div");
+    const strong = document.createElement("strong");
+    strong.textContent = `${entry.username || `aluno${entry.rm}`} (${entry.role || "Developer"})`;
+    const small = document.createElement("small");
+    small.textContent = `RM ${entry.rm} • ${isOnline ? "Ativo agora" : `Visto em ${formatTime(entry.at)}`}`;
+    left.appendChild(strong);
+    left.appendChild(small);
+
+    const status = document.createElement("span");
+    status.className = "user-status";
+    const dot = document.createElement("span");
+    dot.className = `status-dot ${isOnline ? "online" : "offline"}`;
+    const text = document.createElement("span");
+    text.textContent = isOnline ? "Online" : "Offline";
+    status.appendChild(dot);
+    status.appendChild(text);
+
+    li.appendChild(left);
+    li.appendChild(status);
+    usersList.appendChild(li);
+  });
+}
+
+function refreshSharedPanels() {
+  const nextChat = safeRead(CHAT_KEY, []);
+  const nextLogs = safeRead(LOGS_KEY, []);
+  const nextUnread = Number(localStorage.getItem(`${UNREAD_LOGS_KEY}_${session.rm}`) || "0");
+
+  chat.splice(0, chat.length, ...nextChat);
+  logs.splice(0, logs.length, ...nextLogs);
+  unreadLogs = Number.isNaN(nextUnread) ? 0 : nextUnread;
+
+  renderChat();
+  renderLogs();
+  renderUsers();
 }
 
 function createTaskElement(taskData, columnId) {
@@ -418,6 +515,7 @@ chatForm.addEventListener("submit", (event) => {
   renderChat();
   addLog(`${displayName()} enviou mensagem no chat.`);
   input.value = "";
+  touchPresence();
 });
 
 function openChat() {
@@ -499,7 +597,19 @@ logsToggle.addEventListener("click", () => {
     saveUnreadLogs();
     renderLogsBadge();
   }
+
+  if (usersDropdown) usersDropdown.classList.add("hidden");
+  touchPresence();
 });
+
+if (usersToggle && usersDropdown) {
+  usersToggle.addEventListener("click", () => {
+    usersDropdown.classList.toggle("hidden");
+    logsDropdown.classList.add("hidden");
+    renderUsers();
+    touchPresence();
+  });
+}
 
 document.addEventListener("click", (event) => {
   const target = event.target;
@@ -507,6 +617,10 @@ document.addEventListener("click", (event) => {
 
   if (!logsDropdown.contains(target) && !logsToggle.contains(target)) {
     logsDropdown.classList.add("hidden");
+  }
+
+  if (usersDropdown && usersToggle && !usersDropdown.contains(target) && !usersToggle.contains(target)) {
+    usersDropdown.classList.add("hidden");
   }
 });
 
@@ -519,9 +633,25 @@ if (!logs.length) {
   addLog(`${displayName()} acessou o board.`);
 }
 
+window.addEventListener("cloud-sync:remote-update", refreshSharedPanels);
+setInterval(refreshSharedPanels, 3000);
+setInterval(touchPresence, 20000);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    touchPresence();
+    refreshSharedPanels();
+  }
+});
+window.addEventListener("focus", () => {
+  touchPresence();
+  refreshSharedPanels();
+});
+
 updateHeaderUserInfo();
 renderBoard();
 renderChat();
 renderLogs();
 renderLogsBadge();
+renderUsers();
+touchPresence();
 saveBoard();

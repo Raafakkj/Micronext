@@ -1,4 +1,4 @@
-ï»¿(function () {
+(function () {
   const session = getSession();
   if (!session) return;
 
@@ -7,13 +7,32 @@
   const logsList = document.getElementById("logs-list");
   const logsBadge = document.getElementById("logs-badge");
 
+  const usersToggle = document.getElementById("users-toggle");
+  const usersDropdown = document.getElementById("users-dropdown");
+  const usersList = document.getElementById("users-list");
+  const usersBadge = document.getElementById("users-badge");
+
   const chatFab = document.getElementById("chat-fab");
   const chatWidget = document.getElementById("chat-widget");
   const chatClose = document.getElementById("chat-close");
   const chatMessagesEl = document.getElementById("chat-messages");
   const chatForm = document.getElementById("chat-form");
 
-  if (!logsToggle || !logsDropdown || !logsList || !logsBadge || !chatFab || !chatWidget || !chatClose || !chatMessagesEl || !chatForm) {
+  if (
+    !logsToggle ||
+    !logsDropdown ||
+    !logsList ||
+    !logsBadge ||
+    !chatFab ||
+    !chatWidget ||
+    !chatClose ||
+    !chatMessagesEl ||
+    !chatForm ||
+    !usersToggle ||
+    !usersDropdown ||
+    !usersList ||
+    !usersBadge
+  ) {
     return;
   }
 
@@ -21,6 +40,9 @@
   const LOGS_KEY = "fiap_kanban_logs";
   const PROFILES_KEY = "fiap_kanban_profiles";
   const UNREAD_LOGS_KEY = "fiap_kanban_unread_logs";
+  const PRESENCE_KEY = "fiap_online_presence";
+
+  const ONLINE_WINDOW_MS = 65000;
 
   function safeRead(key, fallback) {
     try {
@@ -151,7 +173,7 @@
       return;
     }
 
-    chat.slice(-40).forEach((message) => {
+    chat.slice(-80).forEach((message) => {
       const profile = getProfileByRm(message.rm, message.name);
 
       const bubble = document.createElement("article");
@@ -179,7 +201,7 @@
       const fullName = document.createElement("p");
       fullName.textContent = profile.fullName;
       const rm = document.createElement("small");
-      rm.textContent = `RM ${profile.rm} â€¢ ${profile.role}`;
+      rm.textContent = `RM ${profile.rm} • ${profile.role}`;
 
       info.appendChild(fullName);
       info.appendChild(rm);
@@ -206,6 +228,112 @@
     });
 
     chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+  }
+
+  function readPresence() {
+    const presence = safeRead(PRESENCE_KEY, {});
+    return presence && typeof presence === "object" ? presence : {};
+  }
+
+  function writePresence(presence) {
+    save(PRESENCE_KEY, presence);
+  }
+
+  function touchPresence() {
+    const me = getProfileByRm(session.rm, `aluno${session.rm}`);
+    const presence = readPresence();
+
+    presence[session.rm] = {
+      rm: session.rm,
+      username: me.username,
+      fullName: me.fullName,
+      role: me.role,
+      avatar: me.avatar,
+      at: Date.now(),
+      page: window.location.pathname.split("/").pop() || "app"
+    };
+
+    writePresence(presence);
+    renderUsers();
+  }
+
+  function renderUsers() {
+    const now = Date.now();
+    const presence = readPresence();
+    const list = Object.values(presence)
+      .filter((entry) => entry && entry.rm)
+      .sort((a, b) => Number(b.at || 0) - Number(a.at || 0));
+
+    const onlineCount = list.filter((entry) => now - Number(entry.at || 0) <= ONLINE_WINDOW_MS).length;
+
+    usersBadge.textContent = String(Math.min(onlineCount, 99));
+    if (onlineCount > 0) {
+      usersBadge.classList.remove("hidden");
+    } else {
+      usersBadge.classList.add("hidden");
+    }
+
+    usersList.innerHTML = "";
+
+    if (!list.length) {
+      const empty = document.createElement("li");
+      empty.className = "log-item empty";
+      empty.textContent = "Nenhum usuario detectado ainda.";
+      usersList.appendChild(empty);
+      return;
+    }
+
+    list.forEach((entry) => {
+      const isOnline = now - Number(entry.at || 0) <= ONLINE_WINDOW_MS;
+
+      const li = document.createElement("li");
+      li.className = "user-item";
+
+      const left = document.createElement("div");
+      const strong = document.createElement("strong");
+      strong.textContent = `${entry.username || `aluno${entry.rm}`} (${entry.role || "Developer"})`;
+
+      const small = document.createElement("small");
+      small.textContent = `RM ${entry.rm} • ${isOnline ? "Ativo agora" : `Visto em ${formatTime(entry.at)}`}`;
+
+      left.appendChild(strong);
+      left.appendChild(small);
+
+      const status = document.createElement("span");
+      status.className = "user-status";
+
+      const dot = document.createElement("span");
+      dot.className = `status-dot ${isOnline ? "online" : "offline"}`;
+
+      const text = document.createElement("span");
+      text.textContent = isOnline ? "Online" : "Offline";
+
+      status.appendChild(dot);
+      status.appendChild(text);
+
+      li.appendChild(left);
+      li.appendChild(status);
+      usersList.appendChild(li);
+    });
+  }
+
+  function refreshFromStorage() {
+    const nextChat = safeRead(CHAT_KEY, []);
+    const nextLogs = safeRead(LOGS_KEY, []);
+    const nextUnread = Number(localStorage.getItem(`${UNREAD_LOGS_KEY}_${session.rm}`) || "0");
+
+    const chatChanged = JSON.stringify(nextChat) !== JSON.stringify(chat);
+    const logsChanged = JSON.stringify(nextLogs) !== JSON.stringify(logs);
+
+    chat = nextChat;
+    logs = nextLogs;
+    unreadLogs = Number.isNaN(nextUnread) ? 0 : nextUnread;
+
+    if (chatChanged) renderChat();
+    if (logsChanged) renderLogs();
+    if (!logsChanged) renderLogsBadge();
+
+    renderUsers();
   }
 
   function openChat() {
@@ -237,14 +365,15 @@
       at: Date.now()
     });
 
-    if (chat.length > 120) {
-      chat.splice(0, chat.length - 120);
+    if (chat.length > 200) {
+      chat.splice(0, chat.length - 200);
     }
 
     save(CHAT_KEY, chat);
     renderChat();
     addLog(`${me.username} enviou mensagem no chat.`);
     input.value = "";
+    touchPresence();
   });
 
   logsToggle.addEventListener("click", () => {
@@ -256,6 +385,16 @@
       saveUnreadLogs();
       renderLogsBadge();
     }
+
+    usersDropdown.classList.add("hidden");
+    touchPresence();
+  });
+
+  usersToggle.addEventListener("click", () => {
+    usersDropdown.classList.toggle("hidden");
+    logsDropdown.classList.add("hidden");
+    touchPresence();
+    renderUsers();
   });
 
   document.addEventListener("click", (event) => {
@@ -265,8 +404,36 @@
     if (!logsDropdown.contains(target) && !logsToggle.contains(target)) {
       logsDropdown.classList.add("hidden");
     }
+
+    if (!usersDropdown.contains(target) && !usersToggle.contains(target)) {
+      usersDropdown.classList.add("hidden");
+    }
   });
 
+  window.addEventListener("cloud-sync:remote-update", refreshFromStorage);
+
+  setInterval(() => {
+    refreshFromStorage();
+  }, 3000);
+
+  setInterval(() => {
+    touchPresence();
+  }, 20000);
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      touchPresence();
+      refreshFromStorage();
+    }
+  });
+
+  window.addEventListener("focus", () => {
+    touchPresence();
+    refreshFromStorage();
+  });
+
+  touchPresence();
   renderChat();
   renderLogs();
+  renderUsers();
 })();
