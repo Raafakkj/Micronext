@@ -106,7 +106,7 @@ let pendingAvatarData = null;
 let lastProfileFingerprint = JSON.stringify(profile || {});
 
 if (!settingsForm || !loginForm || !passwordForm || !avatarPreview || !avatarUpload || !clearAvatarBtn || !userInfo || !logoutBtn) {
-  throw new Error("Settings UI nao encontrada.");
+  console.warn("Settings UI incompleta, ignorando inicializacao desta pagina.");
 }
 
 function renderAvatar() {
@@ -150,15 +150,16 @@ function setMessage(el, text, ok = false) {
   el.textContent = text;
 }
 
-settingsForm.fullName.value = profile.fullName || "";
-settingsForm.username.value = profile.username || "";
-settingsForm.role.value = profile.role || "Developer";
-loginForm.newRm.value = currentRm;
+if (settingsForm && loginForm && passwordForm && avatarPreview && avatarUpload && clearAvatarBtn && userInfo && logoutBtn) {
+  settingsForm.fullName.value = profile.fullName || "";
+  settingsForm.username.value = profile.username || "";
+  settingsForm.role.value = profile.role || "Developer";
+  loginForm.newRm.value = currentRm;
 
-refreshHeader();
-renderAvatar();
+  refreshHeader();
+  renderAvatar();
 
-settingsForm.addEventListener("submit", (event) => {
+  settingsForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
   const fullName = settingsForm.fullName.value.trim();
@@ -187,9 +188,9 @@ settingsForm.addEventListener("submit", (event) => {
   avatarUpload.value = "";
   refreshHeader();
   renderAvatar();
-});
+  });
 
-avatarUpload.addEventListener("change", () => {
+  avatarUpload.addEventListener("change", () => {
   const file = avatarUpload.files && avatarUpload.files[0];
   if (!file) return;
 
@@ -208,9 +209,9 @@ avatarUpload.addEventListener("change", () => {
     settingsMessage.textContent = "Foto carregada. Clique em Salvar perfil para confirmar.";
   };
   reader.readAsDataURL(file);
-});
+  });
 
-clearAvatarBtn.addEventListener("click", () => {
+  clearAvatarBtn.addEventListener("click", () => {
   pendingAvatarData = "";
   profile.avatar = "";
   profiles[currentRm] = profile;
@@ -218,9 +219,9 @@ clearAvatarBtn.addEventListener("click", () => {
   lastProfileFingerprint = JSON.stringify(profile);
   renderAvatar();
   setMessage(settingsMessage, "Foto removida.", true);
-});
+  });
 
-loginForm.addEventListener("submit", async (event) => {
+  loginForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const newRm = sanitizeRm(loginForm.newRm.value.trim());
@@ -276,9 +277,9 @@ loginForm.addEventListener("submit", async (event) => {
 
   loginForm.currentPassword.value = "";
   setMessage(loginMessage, "Login atualizado com sucesso.", true);
-});
+  });
 
-passwordForm.addEventListener("submit", async (event) => {
+  passwordForm.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const currentPassword = passwordForm.currentPassword.value;
@@ -309,16 +310,17 @@ passwordForm.addEventListener("submit", async (event) => {
 
   passwordForm.reset();
   setMessage(passwordMessage, "Senha atualizada com sucesso.", true);
-});
+  });
 
-logoutBtn.addEventListener("click", () => {
-  clearSession();
-  window.location.href = "./index.html";
-});
+  logoutBtn.addEventListener("click", () => {
+    clearSession();
+    window.location.href = "./index.html";
+  });
 
-window.addEventListener("cloud-sync:remote-update", syncProfileFromStorage);
-window.addEventListener("focus", syncProfileFromStorage);
-document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) syncProfileFromStorage();
-});
+  window.addEventListener("cloud-sync:remote-update", syncProfileFromStorage);
+  window.addEventListener("focus", syncProfileFromStorage);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) syncProfileFromStorage();
+  });
+}
 
