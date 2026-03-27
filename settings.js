@@ -25,6 +25,10 @@ const passwordMessage = document.getElementById("password-message");
 
 const ALLOWED_ROLES = ["Developer", "Scrum Master", "PO"];
 
+function isPlainObject(value) {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
 function safeRead(key, fallback) {
   try {
     const parsed = JSON.parse(localStorage.getItem(key) || "null");
@@ -98,10 +102,16 @@ function migrateRmReferences(oldRm, newRm) {
   }
 }
 
-const profiles = safeRead(PROFILES_KEY, {});
+const rawProfiles = safeRead(PROFILES_KEY, {});
+const profiles = isPlainObject(rawProfiles) ? rawProfiles : {};
 ensureProfileExists(profiles, currentRm);
 
-let profile = profiles[currentRm];
+let profile = isPlainObject(profiles[currentRm]) ? profiles[currentRm] : {
+  fullName: `Aluno RM ${currentRm}`,
+  username: `aluno${currentRm}`,
+  role: "Developer",
+  avatar: ""
+};
 let pendingAvatarData = null;
 let lastProfileFingerprint = JSON.stringify(profile || {});
 
@@ -127,9 +137,10 @@ function refreshHeader() {
 }
 
 function syncProfileFromStorage() {
-  const latestProfiles = safeRead(PROFILES_KEY, {});
+  const latestRawProfiles = safeRead(PROFILES_KEY, {});
+  const latestProfiles = isPlainObject(latestRawProfiles) ? latestRawProfiles : {};
   const latestProfile = latestProfiles[currentRm];
-  if (!latestProfile) return;
+  if (!isPlainObject(latestProfile)) return;
 
   const fingerprint = JSON.stringify(latestProfile);
   if (fingerprint === lastProfileFingerprint) return;
@@ -234,6 +245,10 @@ if (settingsForm && loginForm && passwordForm && avatarPreview && avatarUpload &
 
   const users = getRegisteredUsers();
   const currentUser = users.find((user) => user.rm === currentRm);
+  if (!currentUser) {
+    setMessage(loginMessage, "Usuario atual nao encontrado.");
+    return;
+  }
   const ok = await verifyUserPassword(currentUser, currentPassword);
   if (!ok) {
     setMessage(loginMessage, "Senha atual incorreta.");
@@ -298,6 +313,10 @@ if (settingsForm && loginForm && passwordForm && avatarPreview && avatarUpload &
 
   const users = getRegisteredUsers();
   const currentUser = users.find((user) => user.rm === currentRm);
+  if (!currentUser) {
+    setMessage(passwordMessage, "Usuario atual nao encontrado.");
+    return;
+  }
   const ok = await verifyUserPassword(currentUser, currentPassword);
   if (!ok) {
     setMessage(passwordMessage, "Senha atual incorreta.");
