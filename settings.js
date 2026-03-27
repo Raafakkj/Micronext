@@ -40,14 +40,17 @@ function saveProfiles(profiles) {
 }
 
 function persistCategoryRemote(category, data) {
-  fetch(`/api/data/${category}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ data }),
-    keepalive: true
-  }).catch(() => {
-    // cloud-sync retries background sync
-  });
+  try {
+    fetch(`/api/data/${category}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data })
+    }).catch(() => {
+      // cloud-sync retries background sync
+    });
+  } catch {
+    // ignore sync errors and keep local persistence
+  }
 }
 
 function persistUsersRemote() {
@@ -62,15 +65,23 @@ function initialsFromName(name) {
 }
 
 function ensureProfileExists(profiles, rm) {
-  if (!profiles[rm]) {
-    profiles[rm] = {
-      fullName: `Aluno RM ${rm}`,
-      username: `aluno${rm}`,
-      role: "Developer",
-      avatar: ""
-    };
-    saveProfiles(profiles);
-  }
+  const source = profiles[rm] || {};
+  const next = {
+    fullName: source.fullName || `Aluno RM ${rm}`,
+    username: source.username || `aluno${rm}`,
+    role: ALLOWED_ROLES.includes(source.role) ? source.role : "Developer",
+    avatar: source.avatar || ""
+  };
+
+  const changed =
+    !profiles[rm] ||
+    profiles[rm].fullName !== next.fullName ||
+    profiles[rm].username !== next.username ||
+    profiles[rm].role !== next.role ||
+    profiles[rm].avatar !== next.avatar;
+
+  profiles[rm] = next;
+  if (changed) saveProfiles(profiles);
 }
 
 function migrateRmReferences(oldRm, newRm) {
@@ -94,8 +105,8 @@ let profile = profiles[currentRm];
 let pendingAvatarData = null;
 let lastProfileFingerprint = JSON.stringify(profile || {});
 
-if (!ALLOWED_ROLES.includes(profile.role)) {
-  profile.role = "Developer";
+if (!settingsForm || !loginForm || !passwordForm || !avatarPreview || !avatarUpload || !clearAvatarBtn || !userInfo || !logoutBtn) {
+  throw new Error("Settings UI nao encontrada.");
 }
 
 function renderAvatar() {
