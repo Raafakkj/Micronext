@@ -99,6 +99,17 @@ function saveBoard() {
   localStorage.setItem(BOARD_KEY, JSON.stringify(board));
 }
 
+function persistBoardRemote() {
+  fetch("/api/data/board", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data: board }),
+    keepalive: true
+  }).catch(() => {
+    // cloud-sync will retry in background
+  });
+}
+
 function saveLogs() {
   localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
 }
@@ -221,6 +232,7 @@ function syncFromDom() {
   });
 
   saveBoard();
+  persistBoardRemote();
   lastBoardFingerprint = JSON.stringify(board);
 }
 
@@ -249,6 +261,7 @@ document.querySelectorAll(".column form").forEach((form) => {
     input.value = "";
     renderBoard();
     saveBoard();
+    persistBoardRemote();
     addLog(`${displayName()} criou um card em ${COLUMN_LABELS[columnId]}: "${value}".`);
   });
 });
