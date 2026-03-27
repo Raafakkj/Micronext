@@ -1,0 +1,126 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>⚙️ Micronext | Comunidade</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="kanban-body">
+    <div class="app-shell menu-collapsed">
+      <aside class="side-menu">
+        <div class="brand-block">
+          <img src="./kangaroo.svg" alt="Logo Microcontrolador" class="brand-logo" />
+        </div>
+
+        <nav class="menu-links">
+          <a class="menu-link" href="./kanban.html">Kanban</a>
+          <a class="menu-link" href="./sprints.html">Sprints</a>
+          <a class="menu-link" href="./settings.html">Perfil</a>
+          <a class="menu-link active" href="./community.html">Comunidade</a>
+          <a class="menu-link" href="./register.html">Novo RM</a>
+        </nav>
+      </aside>
+
+      <main class="app-main">
+        <header class="topbar">
+          <div class="topbar-left">
+            <button class="menu-peek-btn" data-menu-peek type="button" aria-label="Mostrar menu">☰</button>
+            <div>
+              <h1>Comunidade de Sprints</h1>
+              <small id="user-info"></small>
+            </div>
+          </div>
+          <nav class="actions">
+            <button id="logs-toggle" class="notif-btn" type="button" aria-label="Ver notificacoes">
+              🔔 <span id="logs-badge" class="badge">0</span>
+            </button>
+            <button id="users-toggle" class="notif-btn" type="button" aria-label="Ver usuarios online">
+              👥 <span id="users-badge" class="badge">0</span>
+            </button>
+            <button id="logout" class="danger-btn" type="button">Sair</button>
+          </nav>
+        </header>
+
+        <section class="community-grid">
+          <section class="panel">
+            <h3>Novo Post</h3>
+            <form id="community-form" class="settings-form" novalidate>
+              <label for="post-type">Tipo</label>
+              <select id="post-type" name="type" class="input-like" required>
+                <option value="Projeto">Projeto</option>
+                <option value="Atualizacao">Atualizacao</option>
+                <option value="Reclamacao">Reclamacao</option>
+                <option value="Sprint">Sprint</option>
+              </select>
+
+              <label for="post-title">Titulo</label>
+              <input id="post-title" name="title" type="text" maxlength="90" required />
+
+              <label for="post-sprint">Sprint relacionada (opcional)</label>
+              <input id="post-sprint" name="sprint" type="text" maxlength="30" placeholder="Ex: Sprint 5" />
+
+              <label for="post-content">Conteudo</label>
+              <textarea id="post-content" name="content" class="input-like text-area-like" maxlength="800" required></textarea>
+
+              <button type="submit">Publicar</button>
+              <p id="community-message" class="message"></p>
+            </form>
+          </section>
+
+          <section class="panel">
+            <h3>Feed da Comunidade</h3>
+            <div class="community-filters">
+              <select id="filter-type" class="input-like">
+                <option value="Todos">Todos os tipos</option>
+                <option value="Projeto">Projeto</option>
+                <option value="Atualizacao">Atualizacao</option>
+                <option value="Reclamacao">Reclamacao</option>
+                <option value="Sprint">Sprint</option>
+              </select>
+              <input id="filter-search" type="text" placeholder="Buscar por titulo, sprint ou texto..." />
+            </div>
+
+            <div id="community-feed" class="community-feed"></div>
+          </section>
+        </section>
+
+        <section id="logs-dropdown" class="panel logs-dropdown hidden">
+          <h3>Ultimas Alteracoes</h3>
+          <ul id="logs-list" class="logs-list"></ul>
+        </section>
+
+        <section id="users-dropdown" class="panel users-dropdown hidden">
+          <h3>Usuarios</h3>
+          <ul id="users-list" class="users-list"></ul>
+        </section>
+      </main>
+    </div>
+
+    <button id="chat-fab" class="chat-fab" type="button" aria-label="Abrir chat">💬</button>
+
+    <section id="chat-widget" class="chat-widget hidden" aria-label="Chat do grupo">
+      <header>
+        <h3>Chat do Grupo</h3>
+        <button id="chat-close" type="button" class="ghost-btn">Fechar</button>
+      </header>
+      <div id="chat-messages" class="chat-messages"></div>
+      <form id="chat-form" class="chat-form">
+        <input id="chat-input" name="message" type="text" placeholder="Escreva para o grupo..." maxlength="220" required />
+        <button type="submit">Enviar</button>
+      </form>
+    </section>
+
+    <script src="./cloud-sync.js"></script>
+    <script src="./auth-utils.js"></script>
+    <script src="./ui.js"></script>
+    <script src="./widgets.js"></script>
+    <script src="./community.js"></script>
+  </body>
+</html>

@@ -1,0 +1,122 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>⚙️ Micronext | Board</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="kanban-body">
+    <div class="app-shell menu-collapsed">
+      <aside class="side-menu">
+        <div class="brand-block">
+          <img src="./kangaroo.svg" alt="Logo Kangaroo" class="brand-logo" />
+        </div>
+
+        <nav class="menu-links">
+          <a class="menu-link active" href="./kanban.html">Kanban</a>
+          <a class="menu-link" href="./sprints.html">Sprints</a>
+          <a class="menu-link" href="./settings.html">Perfil</a>
+          <a class="menu-link" href="./community.html">Comunidade</a>
+          <a class="menu-link" href="./register.html">Novo RM</a>
+        </nav>
+      </aside>
+
+      <main class="app-main">
+        <header class="topbar">
+          <div class="topbar-left">
+            <button class="menu-peek-btn" data-menu-peek type="button" aria-label="Mostrar menu">☰</button>
+            <div>
+              <h1>Kanban</h1>
+              <small id="user-info"></small>
+            </div>
+          </div>
+
+          <nav class="actions">
+            <button id="logs-toggle" class="notif-btn" type="button" aria-label="Ver notificacoes">
+              🔔 <span id="logs-badge" class="badge">0</span>
+            </button>
+            <button id="users-toggle" class="notif-btn" type="button" aria-label="Ver usuarios online">
+              👥 <span id="users-badge" class="badge">0</span>
+            </button>
+            <button id="logout" class="danger-btn" type="button">Sair</button>
+          </nav>
+        </header>
+
+        <section class="workspace one-col">
+          <section class="board-area">
+            <div class="kanban" id="kanban-board">
+              <section class="column" data-column="todo">
+                <h2>A Fazer</h2>
+                <div class="tasks" id="todo"></div>
+                <form data-form="todo">
+                  <input name="task" type="text" placeholder="Adicionar card" required />
+                  <button type="submit" aria-label="Adicionar tarefa">+</button>
+                </form>
+              </section>
+
+              <section class="column" data-column="doing">
+                <h2>Em Andamento</h2>
+                <div class="tasks" id="doing"></div>
+                <form data-form="doing">
+                  <input name="task" type="text" placeholder="Adicionar card" required />
+                  <button type="submit" aria-label="Adicionar tarefa">+</button>
+                </form>
+              </section>
+
+              <section class="column" data-column="done">
+                <h2>Concluido</h2>
+                <div class="tasks" id="done"></div>
+                <form data-form="done">
+                  <input name="task" type="text" placeholder="Adicionar card" required />
+                  <button type="submit" aria-label="Adicionar tarefa">+</button>
+                </form>
+              </section>
+            </div>
+          </section>
+        </section>
+
+        <section id="logs-dropdown" class="panel logs-dropdown hidden">
+          <h3>Ultimas Alteracoes</h3>
+          <ul id="logs-list" class="logs-list"></ul>
+        </section>
+
+        <section id="users-dropdown" class="panel users-dropdown hidden">
+          <h3>Usuarios</h3>
+          <ul id="users-list" class="users-list"></ul>
+        </section>
+
+        <button id="download-pdf" class="download-pdf-btn" type="button" aria-label="Baixar PDF do Kanban">
+          ⬇ PDF
+        </button>
+      </main>
+    </div>
+
+    <button id="chat-fab" class="chat-fab" type="button" aria-label="Abrir chat">💬</button>
+
+    <section id="chat-widget" class="chat-widget hidden" aria-label="Chat do grupo">
+      <header>
+        <h3>Chat do Grupo</h3>
+        <button id="chat-close" type="button" class="ghost-btn">Fechar</button>
+      </header>
+      <div id="chat-messages" class="chat-messages"></div>
+      <form id="chat-form" class="chat-form">
+        <input id="chat-input" name="message" type="text" placeholder="Escreva para o grupo..." maxlength="220" required />
+        <button type="submit">Enviar</button>
+      </form>
+    </section>
+
+    <script src="./cloud-sync.js"></script>
+    <script src="./auth-utils.js"></script>
+    <script src="./ui.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="./kanban.js"></script>
+  </body>
+</html>
+

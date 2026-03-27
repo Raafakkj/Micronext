@@ -1,0 +1,40 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>⚙️ Micronext | Novo Usuario</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="login-body">
+    <main class="register-shell">
+      <section class="auth-card">
+        <h2>Registrar Novo RM</h2>
+        <p class="subtitle">Somente usuario autenticado pode criar novo acesso.</p>
+
+        <form id="register-form" novalidate>
+          <label for="new-rm">RM FIAP</label>
+          <input id="new-rm" name="rm" type="text" inputmode="numeric" maxlength="7" placeholder="Ex: 559999" required />
+
+          <label for="new-password">Senha inicial</label>
+          <input id="new-password" name="password" type="password" minlength="6" placeholder="Minimo 6 caracteres" required />
+
+          <button type="submit">Cadastrar Usuario</button>
+          <p id="message" class="message" role="status" aria-live="polite"></p>
+        </form>
+
+        <a class="back-link" href="./kanban.html">Voltar ao board</a>
+      </section>
+    </main>
+
+    <script src="./cloud-sync.js"></script>
+    <script src="./auth-utils.js"></script>
+    <script src="./register.js"></script>
+  </body>
+</html>

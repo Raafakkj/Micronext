@@ -1,0 +1,47 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>⚙️ Micronext | Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="login-body">
+    <main class="login-shell">
+      <section class="hero-panel">
+        <p class="hero-tag">Academic AI project</p>
+        <h1>Micronext</h1>
+        <p>
+          Plataforma de organizacao para squads: gerencie cards no Kanban, planeje
+          sprints, acompanhe prioridades e mantenha o time alinhado em um unico lugar.
+        </p>
+      </section>
+
+      <section class="auth-card">
+        <h2>Entrar</h2>
+        <p class="subtitle">Use seu RM FIAP e senha.</p>
+
+        <form id="login-form" novalidate>
+          <label for="rm">RM FIAP</label>
+          <input id="rm" name="rm" type="text" inputmode="numeric" maxlength="7" placeholder="Ex: 554321" required />
+
+          <label for="password">Senha</label>
+          <input id="password" name="password" type="password" placeholder="Digite sua senha" required />
+
+          <button type="submit">Acessar Kanban</button>
+          <p id="message" class="message" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+    </main>
+
+    <script src="./cloud-sync.js"></script>
+    <script src="./auth-utils.js"></script>
+    <script src="./auth.js"></script>
+  </body>
+</html>

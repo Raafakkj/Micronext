@@ -1,0 +1,120 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>⚙️ Micronext | Sprints</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="kanban-body">
+    <div class="app-shell menu-collapsed">
+      <aside class="side-menu">
+        <div class="brand-block">
+          <img src="./kangaroo.svg" alt="Logo Kangaroo" class="brand-logo" />
+        </div>
+
+        <nav class="menu-links">
+          <a class="menu-link" href="./kanban.html">Kanban</a>
+          <a class="menu-link active" href="./sprints.html">Sprints</a>
+          <a class="menu-link" href="./settings.html">Perfil</a>
+          <a class="menu-link" href="./community.html">Comunidade</a>
+          <a class="menu-link" href="./register.html">Novo RM</a>
+        </nav>
+      </aside>
+
+      <main class="app-main">
+        <header class="topbar">
+          <div class="topbar-left">
+            <button class="menu-peek-btn" data-menu-peek type="button" aria-label="Mostrar menu">☰</button>
+            <div>
+              <h1>Planejamento de Sprints</h1>
+              <small id="user-info"></small>
+            </div>
+          </div>
+          <nav class="actions">
+            <button id="logs-toggle" class="notif-btn" type="button" aria-label="Ver notificacoes">
+              🔔 <span id="logs-badge" class="badge">0</span>
+            </button>
+            <button id="users-toggle" class="notif-btn" type="button" aria-label="Ver usuarios online">
+              👥 <span id="users-badge" class="badge">0</span>
+            </button>
+            <button id="logout" class="danger-btn" type="button">Sair</button>
+          </nav>
+        </header>
+
+        <section class="page-grid">
+          <section class="panel">
+            <h3>Nova Sprint</h3>
+            <form id="sprint-form" class="settings-form" novalidate>
+              <label for="sprint-name">Nome da sprint</label>
+              <input id="sprint-name" name="name" type="text" placeholder="Ex: Sprint 05" required />
+
+              <label for="sprint-goal">Objetivo</label>
+              <input id="sprint-goal" name="goal" type="text" placeholder="Ex: Entregar modulo de pagamentos" required />
+
+              <label for="sprint-priority">Nivel de importancia</label>
+              <select id="sprint-priority" name="priority" class="input-like" required>
+                <option value="Baixa">Baixa</option>
+                <option value="Media">Media</option>
+                <option value="Alta">Alta</option>
+                <option value="Critica">Critica</option>
+              </select>
+
+              <label for="sprint-status">Status</label>
+              <select id="sprint-status" name="status" class="input-like" required>
+                <option value="Planejada">Planejada</option>
+                <option value="Ativa">Ativa</option>
+                <option value="Concluida">Concluida</option>
+              </select>
+
+              <button type="submit">Adicionar Sprint</button>
+              <p id="sprint-message" class="message"></p>
+            </form>
+          </section>
+
+          <section class="panel">
+            <h3>Sprints Cadastradas</h3>
+            <div id="sprint-list" class="sprint-list"></div>
+          </section>
+        </section>
+
+        <section id="logs-dropdown" class="panel logs-dropdown hidden">
+          <h3>Ultimas Alteracoes</h3>
+          <ul id="logs-list" class="logs-list"></ul>
+        </section>
+
+        <section id="users-dropdown" class="panel users-dropdown hidden">
+          <h3>Usuarios</h3>
+          <ul id="users-list" class="users-list"></ul>
+        </section>
+      </main>
+    </div>
+
+    <button id="chat-fab" class="chat-fab" type="button" aria-label="Abrir chat">💬</button>
+
+    <section id="chat-widget" class="chat-widget hidden" aria-label="Chat do grupo">
+      <header>
+        <h3>Chat do Grupo</h3>
+        <button id="chat-close" type="button" class="ghost-btn">Fechar</button>
+      </header>
+      <div id="chat-messages" class="chat-messages"></div>
+      <form id="chat-form" class="chat-form">
+        <input id="chat-input" name="message" type="text" placeholder="Escreva para o grupo..." maxlength="220" required />
+        <button type="submit">Enviar</button>
+      </form>
+    </section>
+
+    <script src="./cloud-sync.js"></script>
+    <script src="./auth-utils.js"></script>
+    <script src="./ui.js"></script>
+    <script src="./widgets.js"></script>
+    <script src="./sprints.js"></script>
+  </body>
+</html>
+
